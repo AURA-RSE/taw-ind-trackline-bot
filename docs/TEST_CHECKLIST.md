@@ -5,7 +5,7 @@ Only message or call test numbers you own or that agreed to receive test message
 ## A. Automated
 | # | Check | Command | Pass when |
 |---|---|---|---|
-| A1 | Unit + route tests | `npm test` | 18/18 pass |
+| A1 | Unit + route tests | `npm test` | 19/19 pass |
 | A2 | Vapi config fills | `node scripts/setup-vapi.js --dry-run` | no missing placeholders |
 | A3 | Health | `GET /api/health` on Vercel | `whatsapp_configured: true`, `vapi_secret_set: true` |
 

@@ -65,6 +65,7 @@ flowchart TD
 | `POST /api/whatsapp` | Inbound WhatsApp messages (checks `X-Hub-Signature-256`) |
 | `POST /api/vapi` | Vapi tool calls and end-of-call reports (checks `X-Vapi-Secret`) |
 | `POST /api/twilio-whatsapp` | Same bot over Twilio's WhatsApp sandbox (TwiML replies, checks `X-Twilio-Signature`) |
+| `POST /api/chat` | Demo chat on the web page (same WhatsApp logic, sends nothing) |
 | `GET /api/track?id=` | Public demo lookup for the web page |
 | `GET /api/health` | Shows which integrations are configured (no secrets) |
 
@@ -85,7 +86,7 @@ flowchart TD
 
 | Brief says | Used here | Why |
 |---|---|---|
-| WhatsApp Cloud API | Built and tested (`/api/whatsapp`) **and** a Twilio WhatsApp sandbox route (`/api/twilio-whatsapp`) | Meta blocked developer registration on a new device ("you're using a device you don't usually use"). The sandbox runs the identical conversation logic. Without reply buttons, the menus become text such as "TL20481736 damaged". Switching back to Meta only needs the env vars and the webhook URL; no code changes. |
+| WhatsApp Cloud API | Built and tested (`/api/whatsapp`) **and** a Twilio WhatsApp route (`/api/twilio-whatsapp`) | Meta blocked developer registration on a new device ("you're using a device you don't usually use"). The Twilio route runs the identical conversation logic. Without reply buttons, the menus become text such as "TL20481736 damaged". Switching to Meta only needs the env vars and the webhook URL; no code changes. |
 | Vapi | Vapi (trial credit) | Voice assistant with function tools and transfer |
 | Node.js | Node.js 20+ on Vercel (Hobby, free) | Deployed demo + webhooks |
 
@@ -93,7 +94,7 @@ flowchart TD
 
 1. **Test locally**
    ```bash
-   npm test            # 18 tests
+   npm test            # 19 tests
    npm run dev         # http://localhost:3000, same handlers as Vercel
    ```
 2. **Meta WhatsApp:** at developers.facebook.com, create an app (Business type) and add **WhatsApp**.
@@ -126,6 +127,14 @@ flowchart TD
 | Vapi tool error / bad arguments / unknown tool | `error` field with HTTP 200 (as Vapi requires); the assistant offers a transfer |
 | Ops alert can't be delivered | Ticket still logged and the customer still gets their reference; failure logged |
 
+## Known limitation: WhatsApp delivery on free tiers
+
+Real WhatsApp messages from the tester's phone **reach the bot and are answered**, as Vercel logs and a signed replay returning the TwiML reply show ([recorded run](docs/recorded-run/RUN_LOG.md)). But **Twilio's free trial sender only delivers Twilio's pre-approved templates**, so it drops custom-text replies, the same limit as P1. Meta's free test number would deliver them, but Meta blocked developer sign-up on this device.
+
+- To go live: upgrade the Twilio account (no code change), **or** create the Meta app from a trusted device, set `WHATSAPP_*` in Vercel, and point the Meta webhook at `/api/whatsapp`.
+- Meanwhile, the **live demo page** has a WhatsApp-style chat that runs the same `lib/whatsapp.js` logic (buttons, problem list, escalations), plus a panel showing the exact ops alerts.
+- Voice (Vapi) has no such limit and runs end to end.
+
 **WhatsApp 24-hour rule:** Meta only allows free-form messages to a number that has messaged the business in the last 24 hours. For ops alerts on the free test number, the ops phone should send any message to the bot once a day. In production, use an approved message template for alerts.
 
 ## Data, privacy and safety
@@ -137,11 +146,15 @@ flowchart TD
 
 ## Screenshots
 
-_Added after the recorded run:_ `docs/screenshots/`
+**WhatsApp conversation demo** (live page, same bot logic): a customer reports damage via the problem menu, then a damaged parcel escalates automatically. The ops alerts appear on the right.
+
+![WhatsApp demo](docs/screenshots/whatsapp-demo.png)
+
+Full recorded run: [`docs/recorded-run/RUN_LOG.md`](docs/recorded-run/RUN_LOG.md)
 
 ## Testing
 
-- `npm test`: 18 tests covering tracking-number parsing (typed and spoken), lookups, privacy of status text, issue detection, auto-escalation rules, ticket IDs and priority, the WhatsApp conversation (buttons, lists, fallbacks), the signature check, send retries, Vapi tools, and the HTTP routes (verify handshake, dedupe, auth, demo lookup)
+- `npm test`: 19 tests covering tracking-number parsing (typed and spoken), lookups, privacy of status text, issue detection, auto-escalation rules, ticket IDs and priority, the WhatsApp conversation (buttons, lists, fallbacks), the signature check, send retries, Vapi tools, and the HTTP routes (verify handshake, dedupe, auth, demo lookup)
 - [`docs/TEST_CHECKLIST.md`](docs/TEST_CHECKLIST.md): manual WhatsApp and voice checks
 
 ## Repo structure

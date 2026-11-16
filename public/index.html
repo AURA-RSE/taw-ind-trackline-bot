@@ -25,6 +25,19 @@
   .muted { color: var(--muted); font-size: 14px; }
   ol { padding-left: 20px; margin: 8px 0 0; }
   code { font-size: 14px; }
+  .chat { display:grid; grid-template-columns: 1fr 260px; gap:14px; }
+  @media (max-width:700px) { .chat { grid-template-columns: 1fr; } }
+  .phone { background:#e5ddd5; border-radius:12px; padding:12px; height:380px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; }
+  @media (prefers-color-scheme: dark) { .phone { background:#0b141a; } }
+  .b { max-width:82%; padding:8px 10px; border-radius:10px; white-space:pre-wrap; font-size:14px; line-height:1.4; color:#111b21; }
+  .b.in { background:#fff; align-self:flex-start; } .b.out { background:#d9fdd3; align-self:flex-end; }
+  @media (prefers-color-scheme: dark) { .b { color:#e9edef; } .b.in { background:#202c33; } .b.out { background:#005c4b; } }
+  .acts { display:flex; flex-direction:column; gap:6px; margin-top:8px; }
+  .act { font:inherit; font-size:13px; padding:7px; border-radius:8px; border:1px solid rgba(0,0,0,.12); background:rgba(255,255,255,.7); color:#0b6e4f; font-weight:600; cursor:pointer; }
+  .ops { border:1px solid var(--line); border-radius:12px; padding:12px; height:380px; overflow-y:auto; font-size:13px; }
+  .ops > strong { position:sticky; top:-12px; display:block; background:var(--card); padding:4px 0; }
+  .alert { background:var(--bg); border-radius:8px; padding:8px; margin-top:8px; white-space:pre-wrap; }
+  .cf { display:flex; gap:8px; margin-top:10px; }
 </style>
 </head>
 <body>
@@ -40,6 +53,18 @@
     </form>
     <div class="chips" id="chips"></div>
     <div id="out" aria-live="polite"></div>
+  </section>
+
+  <section class="card">
+    <strong>WhatsApp conversation demo</strong>
+    <p class="muted" style="margin:4px 0 12px">Runs the bot's real WhatsApp logic (<code>lib/whatsapp.js</code>), including buttons, the problem menu and escalation. Try <em>TL20481736</em>, then <em>Report a problem</em>; or <em>TL20481742</em>; or <em>TL20481738 never arrived</em>.</p>
+    <div class="chat">
+      <div>
+        <div class="phone" id="phone" aria-live="polite"></div>
+        <form class="cf" id="cf"><input id="msg" placeholder="Message TrackLine…" autocomplete="off"><button>Send</button></form>
+      </div>
+      <div class="ops" id="ops"><strong>Ops team alerts</strong><p class="muted" id="opsEmpty">Escalations appear here, as the ops WhatsApp would receive them.</p></div>
+    </div>
   </section>
 
   <section class="card">
@@ -74,6 +99,27 @@
     } catch { out.className = 'err'; out.textContent = 'The lookup service is unavailable. Please try again.'; }
   }
   document.getElementById('f').onsubmit = (e) => { e.preventDefault(); track(); };
+
+  const phone = document.getElementById('phone'), ops = document.getElementById('ops');
+  function bubble(text, dir) { const d = document.createElement('div'); d.className = 'b ' + dir; d.textContent = text; phone.append(d); phone.scrollTop = phone.scrollHeight; return d; }
+  function render(r) {
+    if (r.type === 'text') return bubble(r.text.body, 'in');
+    const i = r.interactive, d = bubble(i.body.text, 'in'), acts = document.createElement('div'); acts.className = 'acts';
+    const items = i.type === 'button' ? i.action.buttons.map((b) => [b.reply.id, b.reply.title]) : i.action.sections[0].rows.map((x) => [x.id, x.description || x.title]);
+    for (const [id, title] of items) { const b = document.createElement('button'); b.type = 'button'; b.className = 'act'; b.textContent = title; b.onclick = () => send({ replyId: id }, title); acts.append(b); }
+    d.append(acts);
+  }
+  async function send(payload, shown) {
+    bubble(shown, 'out');
+    try {
+      const r = await fetch('/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) });
+      const d = await r.json();
+      (d.replies || []).forEach(render);
+      for (const t of d.tickets || []) { document.getElementById('opsEmpty')?.remove(); const a = document.createElement('div'); a.className = 'alert'; a.textContent = t.ops_alert; ops.append(a); ops.scrollTop = ops.scrollHeight; }
+    } catch { bubble('The service is unavailable. Please try again.', 'in'); }
+  }
+  document.getElementById('cf').onsubmit = (e) => { e.preventDefault(); const v = document.getElementById('msg').value.trim(); if (!v) return; document.getElementById('msg').value = ''; send({ text: v }, v); };
+  bubble("Hi, I'm the TrackLine delivery assistant 📦. Send me your tracking number (it looks like TL20481736).", 'in');
 </script>
 </body>
 </html>

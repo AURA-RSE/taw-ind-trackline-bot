@@ -5,8 +5,9 @@ import * as whatsapp from '../api/whatsapp.js';
 import * as vapi from '../api/vapi.js';
 import * as track from '../api/track.js';
 import * as health from '../api/health.js';
+import * as chat from '../api/chat.js';
 
-const routes = { '/api/whatsapp': whatsapp, '/api/vapi': vapi, '/api/track': track, '/api/health': health };
+const routes = { '/api/whatsapp': whatsapp, '/api/vapi': vapi, '/api/track': track, '/api/health': health, '/api/chat': chat };
 const port = Number(process.env.PORT || 3000);
 
 http.createServer(async (req, res) => {

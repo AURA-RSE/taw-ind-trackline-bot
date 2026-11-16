@@ -230,3 +230,15 @@ test('Twilio route: TwiML reply, signature check, ops alert via Twilio', async (
   assert.match(sent[0][1].Body, /TrackLine escalation ESC-/);
   assert.equal((await twRoute.POST(req('bad'), { cfg })).status, 401);
 });
+
+import * as chatRoute from '../api/chat.js';
+test('HTTP: demo chat runs the real conversation and shows the ops alert', async () => {
+  const post = (b) => chatRoute.POST(new Request('https://x/api/chat', { method: 'POST', body: JSON.stringify(b) })).then((r) => r.json());
+  const a = await post({ text: 'TL20481736' });
+  assert.equal(a.replies[0].interactive.type, 'button');
+  const b = await post({ replyId: 'report|TL20481736' });
+  assert.equal(b.replies[0].interactive.type, 'list');
+  const c = await post({ replyId: 'issue|damaged|TL20481736' });
+  assert.match(c.tickets[0].ops_alert, /TrackLine escalation ESC-.*\n.*TL20481736/);
+  assert.doesNotMatch(c.tickets[0].ops_alert, /15550100101/);
+});
