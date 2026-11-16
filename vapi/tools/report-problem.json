@@ -1,0 +1,48 @@
+{
+  "type": "function",
+  "function": {
+    "name": "report_problem",
+    "description": "Open a support ticket for a delivery problem and alert the operations team. Returns a ticket reference to read to the caller.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "tracking_number": {
+          "type": "string"
+        },
+        "issue": {
+          "type": "string",
+          "enum": [
+            "damaged",
+            "not_received",
+            "wrong_item",
+            "late",
+            "reschedule",
+            "human"
+          ]
+        },
+        "details": {
+          "type": "string",
+          "description": "One sentence in the caller's words"
+        }
+      },
+      "required": [
+        "tracking_number",
+        "issue"
+      ]
+    }
+  },
+  "server": {
+    "url": "{{VAPI_SERVER_URL}}",
+    "timeoutSeconds": 20,
+    "headers": {
+      "X-Vapi-Secret": "{{VAPI_SHARED_SECRET}}"
+    }
+  },
+  "messages": [
+    {
+      "type": "request-failed",
+      "role": "system",
+      "content": "The ticket could not be created. Apologise and transfer the caller to a person."
+    }
+  ]
+}

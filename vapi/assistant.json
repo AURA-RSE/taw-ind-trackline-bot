@@ -1,0 +1,67 @@
+{
+  "name": "TrackLine Bot",
+  "firstMessage": "Hi, thanks for calling TrackLine Express. I can tell you where your parcel is or help with a delivery problem. What is your tracking number?",
+  "model": {
+    "provider": "openai",
+    "model": "{{OPENAI_MODEL}}",
+    "temperature": 0.2,
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are the phone assistant for TrackLine Express, a courier company. You help callers find out where their parcel is and report delivery problems. Keep every reply to one or two short sentences, and ask one question at a time.\n\n## Tracking lookups\n1. Ask for the tracking number. It is \"T L\" followed by 8 digits.\n2. Call `lookup_shipment` with exactly what the caller said. Don't reformat it yourself.\n3. Follow the `instruction` in the result. Read the `summary` naturally; don't read the JSON.\n4. If it isn't found, read back what you heard digit by digit and ask them to check it.\n\n## Problems and escalation\n- If the caller reports a problem (damaged, delivered but not received, wrong item, late, wants to reschedule or change the address), call `report_problem` with the tracking number, the `issue`, and a short `details` in their words. Read them the ticket reference slowly, letter by letter.\n- Some lookups escalate automatically (long delays, repeated failed attempts, held parcels, damage). The result then includes a `ticket_id`; tell the caller their reference.\n- If the caller asks for a person, is upset, or you can't help, say you're connecting them, then call `transferCall` in the same turn.\n\n## Rules\n- Only share what the tools return: status, city, dates. Never guess, and never share names, phone numbers or street addresses.\n- Never promise refunds or compensation. Say the support team will review it.\n- If a tool fails, apologise briefly and offer to transfer them to a person.\n- When the caller is done, say goodbye and call `endCall`.\n"
+      }
+    ],
+    "toolIds": [
+      "{{TOOL_ID_lookup_shipment}}",
+      "{{TOOL_ID_report_problem}}",
+      "{{TOOL_ID_transferCall}}",
+      "{{TOOL_ID_endCall}}"
+    ]
+  },
+  "voice": {
+    "provider": "vapi",
+    "voiceId": "Elliot"
+  },
+  "transcriber": {
+    "provider": "deepgram",
+    "model": "nova-2",
+    "language": "en"
+  },
+  "maxDurationSeconds": 420,
+  "server": {
+    "url": "{{VAPI_SERVER_URL}}",
+    "timeoutSeconds": 20,
+    "headers": {
+      "X-Vapi-Secret": "{{VAPI_SHARED_SECRET}}"
+    }
+  },
+  "serverMessages": [
+    "end-of-call-report"
+  ],
+  "analysisPlan": {
+    "summaryPlan": {
+      "enabled": true
+    },
+    "structuredDataPlan": {
+      "enabled": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "tracking_number": {
+            "type": "string"
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "status_given",
+              "ticket_created",
+              "transferred",
+              "not_found",
+              "abandoned"
+            ]
+          }
+        }
+      }
+    }
+  }
+}
