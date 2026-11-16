@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TrackLine Bot – delivery status demo</title>
+<style>
+  :root { --bg:#f6f5f2; --card:#fff; --ink:#1d1d1b; --muted:#6b6a66; --line:#e4e2dc; --accent:#0b6e4f; --warn:#b54708; --bad:#b42318; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#151514; --card:#1f1f1d; --ink:#f1f0ec; --muted:#a3a19b; --line:#33322f; --accent:#3fbf8f; --warn:#f0a050; --bad:#f07060; } }
+  * { box-sizing: border-box; }
+  body { margin:0; font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif; background:var(--bg); color:var(--ink); }
+  main { max-width: 760px; margin: 0 auto; padding: 48px 20px 64px; }
+  h1 { font-size: 30px; margin: 0 0 6px; letter-spacing:-0.02em; }
+  .sub { color: var(--muted); margin: 0 0 28px; }
+  .card { background: var(--card); border:1px solid var(--line); border-radius: 14px; padding: 22px; margin-bottom: 18px; }
+  form { display:flex; gap:10px; }
+  input { flex:1; font:inherit; padding:12px 14px; border:1px solid var(--line); border-radius:10px; background:var(--bg); color:var(--ink); }
+  button { font:inherit; font-weight:600; padding:12px 18px; border:0; border-radius:10px; background:var(--accent); color:#fff; cursor:pointer; }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+  .chip { font-size:13px; padding:6px 10px; border:1px solid var(--line); border-radius:999px; background:transparent; color:var(--ink); font-weight:500; }
+  #out { margin-top:18px; min-height:24px; }
+  .status { font-weight:600; }
+  .exception { color: var(--warn); }
+  .err { color: var(--bad); }
+  .muted { color: var(--muted); font-size: 14px; }
+  ol { padding-left: 20px; margin: 8px 0 0; }
+  code { font-size: 14px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>TrackLine Bot</h1>
+  <p class="sub">Delivery status over WhatsApp and voice, with problems escalated to a human. This page uses the same lookup the bots use. All shipments are fictional demo data.</p>
+
+  <section class="card">
+    <form id="f">
+      <label for="id" class="muted" style="position:absolute;left:-9999px">Tracking number</label>
+      <input id="id" placeholder="Tracking number, e.g. TL20481736" autocomplete="off">
+      <button>Track</button>
+    </form>
+    <div class="chips" id="chips"></div>
+    <div id="out" aria-live="polite"></div>
+  </section>
+
+  <section class="card">
+    <strong>Try it on WhatsApp</strong>
+    <ol>
+      <li>Send any demo tracking number to the TrackLine test number.</li>
+      <li>Tap <em>Report a problem</em> or <em>Talk to a person</em>, or type e.g. "TL20481738 never arrived".</li>
+      <li>Exceptions (delayed 48h+, 2 failed attempts, held, damaged) open a ticket automatically and alert the ops team.</li>
+    </ol>
+    <p class="muted">The voice line (Vapi) uses the same tools: <code>lookup_shipment</code> and <code>report_problem</code>, plus transfer to a person.</p>
+  </section>
+</main>
+<script>
+  const demo = { TL20481736:'In transit', TL20481737:'Out for delivery', TL20481738:'Delivered', TL20481739:'Delayed', TL20481740:'Failed attempt', TL20481741:'Held at hub', TL20481742:'Damaged', TL20481743:'Label created' };
+  const chips = document.getElementById('chips'), out = document.getElementById('out'), input = document.getElementById('id');
+  for (const [id, label] of Object.entries(demo)) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = `${id} · ${label}`;
+    b.onclick = () => { input.value = id; track(); }; chips.appendChild(b);
+  }
+  async function track() {
+    out.textContent = 'Looking up…';
+    try {
+      const r = await fetch('/api/track?id=' + encodeURIComponent(input.value));
+      const d = await r.json();
+      out.innerHTML = '';
+      if (!d.ok) { out.className = 'err'; out.textContent = d.error === 'not_found' ? `No shipment ${d.tracking}. Check the number: TL + 8 digits.` : 'That is not a tracking number: TL + 8 digits.'; return; }
+      out.className = '';
+      const s = document.createElement('div'); s.className = 'status' + (d.exception ? ' exception' : ''); s.textContent = d.status_label;
+      const p = document.createElement('p'); p.textContent = d.summary;
+      out.append(s, p);
+      if (d.escalates) { const e = document.createElement('p'); e.className = 'muted'; e.textContent = 'On WhatsApp or voice, this lookup opens a support ticket and alerts the ops team automatically.'; out.append(e); }
+    } catch { out.className = 'err'; out.textContent = 'The lookup service is unavailable. Please try again.'; }
+  }
+  document.getElementById('f').onsubmit = (e) => { e.preventDefault(); track(); };
+</script>
+</body>
+</html>
