@@ -1,0 +1,9 @@
+{
+  "object": "whatsapp_business_account",
+  "entry": [{ "id": "WABA_ID", "changes": [{ "field": "messages", "value": {
+    "messaging_product": "whatsapp",
+    "metadata": { "display_phone_number": "15550000000", "phone_number_id": "PHONE_NUMBER_ID" },
+    "contacts": [{ "profile": { "name": "Ada Test" }, "wa_id": "15550100101" }],
+    "messages": [{ "from": "15550100101", "id": "wamid.demo.text.1", "timestamp": "1794830400", "type": "text", "text": { "body": "Where is TL20481736?" } }]
+  } }] }]
+}

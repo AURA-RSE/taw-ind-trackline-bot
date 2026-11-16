@@ -1,0 +1,2 @@
+{ "message": { "type": "tool-calls", "call": { "id": "demo-call-1", "type": "webCall" },
+  "toolCallList": [{ "id": "tc_demo_1", "type": "function", "function": { "name": "lookup_shipment", "arguments": { "tracking_number": "T L two zero four eight one seven four one" } } }] } }

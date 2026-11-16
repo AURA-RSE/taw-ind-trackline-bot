@@ -1,0 +1,2 @@
+{ "message": { "type": "tool-calls", "call": { "id": "demo-call-2", "type": "webCall" },
+  "toolCallList": [{ "id": "tc_demo_2", "type": "function", "function": { "name": "report_problem", "arguments": "{\"tracking_number\":\"TL20481736\",\"issue\":\"wrong_item\",\"details\":\"Received someone else's shoes\"}" } }] } }
