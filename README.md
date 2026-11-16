@@ -1,7 +1,7 @@
 # TrackLine Bot · Delivery status on WhatsApp and voice
 
 > 🎥 **Loom demo (60–90s):** _LOOM_LINK_HERE_
-> 🌐 **Live demo:** _DEPLOYED_URL_HERE_
+> 🌐 **Live demo:** https://taw-ind-trackline-bot.vercel.app (try the demo tracking numbers) · health check: [/api/health](https://taw-ind-trackline-bot.vercel.app/api/health)
 
 A delivery assistant for couriers. Customers send a tracking number on **WhatsApp** or say it on a **phone call**, and get the parcel's status straight away. When something has gone wrong (a long delay, repeated failed delivery attempts, a held or damaged parcel, or a customer reporting a problem), the bot **opens a support ticket and alerts the ops team on WhatsApp**. Voice callers can also be transferred to a person.
 
