@@ -35,7 +35,7 @@ A delivery assistant for couriers. Customers send a tracking number on **WhatsAp
 |---|---|
 | Backend | Node.js 20+ (no framework, no dependencies), Web-standard handlers |
 | Hosting | Vercel serverless functions + static demo page |
-| WhatsApp | Meta WhatsApp Cloud API (free test number) |
+| WhatsApp | Meta WhatsApp Cloud API (`/api/whatsapp`) **or** the Twilio WhatsApp sandbox (`/api/twilio-whatsapp`), same conversation logic |
 | Voice | Vapi (function tools, Transfer Call, End Call, end-of-call reports) |
 | Tests | Node's built-in test runner |
 
@@ -64,6 +64,7 @@ flowchart TD
 | `GET /api/whatsapp` | Meta webhook verification (`hub.verify_token`) |
 | `POST /api/whatsapp` | Inbound WhatsApp messages (checks `X-Hub-Signature-256`) |
 | `POST /api/vapi` | Vapi tool calls and end-of-call reports (checks `X-Vapi-Secret`) |
+| `POST /api/twilio-whatsapp` | Same bot over Twilio's WhatsApp sandbox (TwiML replies, checks `X-Twilio-Signature`) |
 | `GET /api/track?id=` | Public demo lookup for the web page |
 | `GET /api/health` | Shows which integrations are configured (no secrets) |
 
@@ -80,19 +81,28 @@ flowchart TD
 | TL20481742 | Damaged | **Auto-escalates** |
 | TL20481743 | Label created | Status + buttons |
 
+## Tools used (free tiers)
+
+| Brief says | Used here | Why |
+|---|---|---|
+| WhatsApp Cloud API | Built and tested (`/api/whatsapp`) **and** a Twilio WhatsApp sandbox route (`/api/twilio-whatsapp`) | Meta blocked developer registration on a new device ("you're using a device you don't usually use"). The sandbox runs the identical conversation logic. Without reply buttons, the menus become text such as "TL20481736 damaged". Switching back to Meta only needs the env vars and the webhook URL; no code changes. |
+| Vapi | Vapi (trial credit) | Voice assistant with function tools and transfer |
+| Node.js | Node.js 20+ on Vercel (Hobby, free) | Deployed demo + webhooks |
+
 ## Setup
 
 1. **Test locally**
    ```bash
-   npm test            # 16 tests
+   npm test            # 18 tests
    npm run dev         # http://localhost:3000, same handlers as Vercel
    ```
 2. **Meta WhatsApp:** at developers.facebook.com, create an app (Business type) and add **WhatsApp**.
    - Under **API Setup**, note the *Phone number ID*, and add your own WhatsApp number as a test recipient.
    - Create a permanent token: a System User in Business settings, with `whatsapp_business_messaging` permission. The temporary token lasts 24 hours.
 3. **Deploy to Vercel:** import this repo with no build settings needed, and add the variables from [`.env.example`](.env.example) (`WHATSAPP_*`, `OPS_WHATSAPP_NUMBER`, `VAPI_SHARED_SECRET`, `TIMEZONE`).
-4. **Webhook:** in Meta, go to **WhatsApp → Configuration → Webhook**. Set the callback URL to `https://<your-app>.vercel.app/api/whatsapp`, use your `WHATSAPP_VERIFY_TOKEN`, and subscribe to **messages**.
-5. **Vapi:** fill `.env` (`VAPI_API_KEY`, `VAPI_SERVER_URL=https://<your-app>.vercel.app/api/vapi`, `VAPI_SHARED_SECRET`, `OPS_PHONE_NUMBER`), then run:
+4. **Webhook (Twilio alternative):** in Twilio Console, go to **Messaging → Try it out → Send a WhatsApp message → Sandbox settings**. Set *When a message comes in* to `https://<your-app>.vercel.app/api/twilio-whatsapp` (POST), and set `TWILIO_*` and `PUBLIC_BASE_URL` in Vercel. Each tester joins the sandbox by sending `join <code>` to +1 415 523 8886.
+5. **Webhook (Meta):** in Meta, go to **WhatsApp → Configuration → Webhook**. Set the callback URL to `https://<your-app>.vercel.app/api/whatsapp`, use your `WHATSAPP_VERIFY_TOKEN`, and subscribe to **messages**.
+6. **Vapi:** fill `.env` (`VAPI_API_KEY`, `VAPI_SERVER_URL=https://<your-app>.vercel.app/api/vapi`, `VAPI_SHARED_SECRET`, `OPS_PHONE_NUMBER`), then run:
    ```bash
    node scripts/setup-vapi.js --dry-run && node scripts/setup-vapi.js
    ```
@@ -131,7 +141,7 @@ _Added after the recorded run:_ `docs/screenshots/`
 
 ## Testing
 
-- `npm test`: 16 tests covering tracking-number parsing (typed and spoken), lookups, privacy of status text, issue detection, auto-escalation rules, ticket IDs and priority, the WhatsApp conversation (buttons, lists, fallbacks), the signature check, send retries, Vapi tools, and the HTTP routes (verify handshake, dedupe, auth, demo lookup)
+- `npm test`: 18 tests covering tracking-number parsing (typed and spoken), lookups, privacy of status text, issue detection, auto-escalation rules, ticket IDs and priority, the WhatsApp conversation (buttons, lists, fallbacks), the signature check, send retries, Vapi tools, and the HTTP routes (verify handshake, dedupe, auth, demo lookup)
 - [`docs/TEST_CHECKLIST.md`](docs/TEST_CHECKLIST.md): manual WhatsApp and voice checks
 
 ## Repo structure

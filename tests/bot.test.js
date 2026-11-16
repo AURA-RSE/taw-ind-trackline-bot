@@ -195,3 +195,38 @@ test('HTTP: Vapi secret, JSON errors and the public demo lookup', async () => {
   assert.equal((await t.json()).escalates, true);
   assert.equal((await trackRoute.GET(new Request('https://x/api/track?id=TL00000000'))).status, 404);
 });
+
+import * as twRoute from '../api/twilio-whatsapp.js';
+import { toPlainText } from '../lib/whatsapp.js';
+
+test('plain-text menus for channels without buttons, and "TL… problem" opens the menu', () => {
+  const status = toPlainText(respond(msg('TL20481736'), { now: NOW }).replies[0]);
+  assert.match(status, /Reply "TL20481736 problem"/);
+  const menu = respond(msg('TL20481736 problem'), { now: NOW });
+  assert.equal(menu.replies[0].interactive.type, 'list');
+  const text = toPlainText(menu.replies[0]);
+  assert.match(text, /• TL20481736 not received/);
+  // every menu line, sent back as-is, opens the right ticket
+  for (const [line, issue] of [['TL20481736 damaged', 'damaged'], ['TL20481736 not received', 'not_received'], ['TL20481736 wrong item', 'wrong_item'], ['TL20481736 late', 'late'], ['TL20481736 reschedule', 'reschedule'], ['TL20481736 agent', 'human']]) {
+    assert.equal(respond(msg(line), { now: NOW }).tickets[0].issue, issue, line);
+  }
+});
+
+test('Twilio route: TwiML reply, signature check, ops alert via Twilio', async () => {
+  const { createHmac: h } = await import('node:crypto');
+  const sent = [];
+  const fetchImpl = async (u, o) => { sent.push([u, Object.fromEntries(new URLSearchParams(o.body.toString()))]); return new Response('{}', { status: 201 }); };
+  const cfg = { timezone: 'Africa/Lagos', whatsapp: {}, opsWhatsapp: '15550100199', vapiSecret: '', publicBaseUrl: 'https://bot.example', twilio: { accountSid: 'AC1', authToken: 'tok', from: '+14155238886' } };
+  const params = { MessageSid: 'SM1', From: 'whatsapp:+15550100101', Body: 'TL20481742', NumMedia: '0' };
+  const sig = h('sha1', 'tok').update('https://bot.example/api/twilio-whatsapp' + Object.keys(params).sort().map((k) => k + params[k]).join('')).digest('base64');
+  const req = (s) => new Request('https://internal/api/twilio-whatsapp', { method: 'POST', body: new URLSearchParams(params).toString(), headers: { 'x-twilio-signature': s, 'content-type': 'application/x-www-form-urlencoded' } });
+  const res = await twRoute.POST(req(sig), { cfg, sendOpts: { fetchImpl, baseDelayMs: 1 } });
+  const body = await res.text();
+  assert.equal(res.status, 200);
+  assert.match(body, /^<\?xml.*<Response><Message>TL20481742 was reported damaged/);
+  assert.match(body, /alerted our support team \(ref ESC-/);
+  assert.equal(sent.length, 1);
+  assert.equal(sent[0][1].To, 'whatsapp:+15550100199');
+  assert.match(sent[0][1].Body, /TrackLine escalation ESC-/);
+  assert.equal((await twRoute.POST(req('bad'), { cfg })).status, 401);
+});
