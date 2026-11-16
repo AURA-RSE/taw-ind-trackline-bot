@@ -1,0 +1,7 @@
+.env
+.env.*
+!.env.example
+.vapi-ids.json
+.vercel
+node_modules/
+.DS_Store
