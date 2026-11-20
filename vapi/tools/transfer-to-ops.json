@@ -1,0 +1,21 @@
+{
+  "type": "transferCall",
+  "destinations": [
+    {
+      "type": "number",
+      "number": "{{OPS_PHONE_NUMBER}}",
+      "message": "Connecting you to our support team now. Please hold.",
+      "description": "TrackLine support team (human). Use when the caller asks for a person, is upset, or the assistant cannot help.",
+      "transferPlan": {
+        "mode": "blind-transfer"
+      }
+    }
+  ],
+  "messages": [
+    {
+      "type": "request-failed",
+      "role": "system",
+      "content": "The transfer failed. Apologise, and use report_problem so the team calls them back."
+    }
+  ]
+}

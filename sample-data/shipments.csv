@@ -1,0 +1,9 @@
+tracking,status,origin,destination,service,high_value,reason
+TL20481736,in_transit,Lagos,Abuja,Standard,false,
+TL20481737,out_for_delivery,Abuja,Abuja,Same day,false,
+TL20481738,delivered,Port Harcourt,Lagos,Express,false,
+TL20481739,delayed,Kano,Lagos,Standard,false,Road closure on the Kaduna–Abuja route
+TL20481740,failed_attempt,Lagos,Ibadan,Standard,false,Nobody available to receive the parcel
+TL20481741,held_at_hub,Enugu,Abuja,Express,true,Address could not be verified
+TL20481742,damaged,Lagos,Port Harcourt,Standard,false,Outer packaging damaged in transit
+TL20481743,label_created,Abuja,Kano,Standard,false,
